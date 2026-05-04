@@ -1,0 +1,43 @@
+.app {
+  @apply min-h-screen bg-gray-50;
+}
+
+.app-header {
+  @apply bg-green-700 text-white px-6 py-4 shadow;
+}
+
+.app-header-inner {
+  @apply max-w-6xl mx-auto flex justify-between items-center;
+}
+
+.app-header-title {
+  @apply text-xl font-bold;
+}
+
+.app-header-subtitle {
+  @apply text-green-200 text-xs;
+}
+
+.app-header-badge {
+  @apply bg-red-500 text-white text-xs px-3 py-1 rounded-full font-medium;
+}
+
+.app-header-btn {
+  @apply bg-white text-green-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-green-50 cursor-pointer;
+}
+
+.app-header-logout {
+  @apply bg-transparent border border-white/50 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/10 cursor-pointer;
+}
+
+.app-main {
+  @apply max-w-6xl mx-auto px-4 py-6;
+}
+
+.app-loading {
+  @apply text-center py-20 text-gray-400;
+}
+
+.app-error {
+  @apply bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm;
+}

@@ -1,0 +1,55 @@
+.table-wrapper {
+  @apply overflow-x-auto rounded-xl border border-gray-200;
+}
+
+.table {
+  @apply w-full text-sm text-left;
+}
+
+.table-head {
+  @apply bg-gray-50 text-gray-600 uppercase text-xs;
+}
+
+.table-th {
+  @apply px-4 py-3;
+}
+
+.table-body {
+  @apply divide-y divide-gray-100 bg-white;
+}
+
+.table-row {
+  @apply hover:bg-gray-50 transition-colors;
+}
+
+.table-td {
+  @apply px-4 py-3 text-gray-600;
+}
+
+.table-td-name {
+  @apply px-4 py-3 font-medium text-gray-800;
+}
+
+.badge-ok {
+  @apply bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full;
+}
+
+.badge-low {
+  @apply bg-red-100 text-red-600 text-xs font-medium px-2 py-1 rounded-full;
+}
+
+.table-actions {
+  @apply flex gap-2;
+}
+
+.btn-edit {
+  @apply text-xs px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 cursor-pointer;
+}
+
+.btn-delete {
+  @apply text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 cursor-pointer;
+}
+
+.table-empty {
+  @apply text-center py-16 text-gray-400 text-sm;
+}

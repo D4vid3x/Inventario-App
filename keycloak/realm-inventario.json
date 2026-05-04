@@ -1,0 +1,43 @@
+{
+  "realm": "inventario",
+  "enabled": true,
+  "displayName": "Inventario",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "inventario-app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "username": "usuario",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Usuario",
+      "lastName": "Demo",
+      "email": "usuario@inventario.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "usuario123",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

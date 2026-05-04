@@ -1,0 +1,23 @@
+.modal-overlay {
+  @apply fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4;
+}
+
+.modal-container {
+  @apply bg-white rounded-2xl shadow-xl w-full max-w-lg;
+}
+
+.modal-header {
+  @apply flex justify-between items-center px-6 py-4 border-b border-gray-200;
+}
+
+.modal-title {
+  @apply font-semibold text-gray-800 text-lg;
+}
+
+.modal-close {
+  @apply text-gray-400 hover:text-gray-600 text-2xl leading-none cursor-pointer;
+}
+
+.modal-body {
+  @apply px-6 py-5;
+}

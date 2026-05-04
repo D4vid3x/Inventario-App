@@ -1,0 +1,77 @@
+services:
+  mongodb:
+    image: mongo:6
+    container_name: inventario-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - fiware
+
+  orion:
+    image: fiware/orion:3.10.1
+    container_name: inventario-orion
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - "1026:1026"
+    command: -dbhost mongodb -db orion -logLevel INFO
+    networks:
+      - fiware
+
+  postgres:
+    image: postgres:16
+    container_name: inventario-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fiware
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: inventario-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - ./keycloak/realm-inventario.json:/opt/keycloak/data/import/realm-inventario.json
+    networks:
+      - fiware
+
+  orion-init:
+    image: curlimages/curl:latest
+    container_name: inventario-orion-init
+    restart: "no"
+    depends_on:
+      orion:
+        condition: service_healthy
+    volumes:
+      - ./keycloak/init-orion.sh:/init-orion.sh
+    entrypoint: sh /init-orion.sh
+    networks:
+      - fiware
+
+volumes:
+  mongodb_data:
+  postgres_data:
+
+networks:
+  fiware:
