@@ -25,16 +25,16 @@
   "users": [
     {
       "id": "10000000-0000-0000-0000-000000000001",
-      "username": "usuario",
+      "username": "${env.DEFAULT_USER}",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Usuario",
       "lastName": "Demo",
-      "email": "usuario@inventario.com",
+      "email": "${env.DEFAULT_USER}@inventario.com",
       "credentials": [
         {
           "type": "password",
-          "value": "usuario123",
+          "value": "${env.DEFAULT_USER_PASSWORD}",
           "temporary": false
         }
       ]
