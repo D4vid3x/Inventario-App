@@ -12,13 +12,13 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "redirectUris": [
-        "http://localhost:5173/*"
+        "${env.FRONTEND_URL}/*"
       ],
       "webOrigins": [
-        "http://localhost:5173"
+        "${env.FRONTEND_URL}"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://localhost:5173/*"
+        "post.logout.redirect.uris": "${env.FRONTEND_URL}/*"
       }
     }
   ],
