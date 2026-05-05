@@ -9,16 +9,20 @@ Aplicación web para gestionar el inventario de un puesto ambulante de frutas y 
 1. [Arquitectura](#arquitectura)
 2. [Tecnologías](#tecnologías)
 3. [Estructura del proyecto](#estructura-del-proyecto)
-4. [Puesta en marcha](#puesta-en-marcha)
-5. [Autenticación con Keycloak](#autenticación-con-keycloak)
-6. [FIWARE Orion — API de inventario](#fiware-orion--api-de-inventario)
-7. [Componentes](#componentes)
-8. [Estilos](#estilos)
-9. [Tipos TypeScript](#tipos-typescript)
+4. [Variables de entorno](#variables-de-entorno)
+5. [Desarrollo local](#desarrollo-local)
+6. [Despliegue en producción](#despliegue-en-producción)
+7. [Autenticación con Keycloak](#autenticación-con-keycloak)
+8. [FIWARE Orion — API de inventario](#fiware-orion--api-de-inventario)
+9. [Componentes](#componentes)
+10. [Estilos](#estilos)
+11. [Tipos TypeScript](#tipos-typescript)
 
 ---
 
 ## Arquitectura
+
+### Desarrollo local
 
 ```
 ┌─────────────────────────────────┐
@@ -32,22 +36,45 @@ Aplicación web para gestionar el inventario de un puesto ambulante de frutas y 
 └────────────┬────────────────────┘
              │
 ┌────────────▼────────────────────┐
-│   MongoDB                       │
-│   puerto 27017                  │
+│   MongoDB · puerto 27017        │
 └─────────────────────────────────┘
 
 ┌─────────────────────────────────┐
-│   Keycloak (Autenticación)      │
-│   http://localhost:8080         │
+│   Keycloak · http://localhost:8080│
 └────────────┬────────────────────┘
              │
 ┌────────────▼────────────────────┐
-│   PostgreSQL                    │
-│   puerto 5432                   │
+│   PostgreSQL · puerto 5432      │
 └─────────────────────────────────┘
 ```
 
-Cada usuario tiene su propio espacio de datos en Orion gracias al header `Fiware-Service`, construido a partir del ID de usuario de Keycloak. Esto garantiza el aislamiento total entre inventarios de distintos usuarios.
+### Producción (AWS EC2)
+
+```
+Internet
+    │
+    ▼ 443 (HTTPS)
+┌─────────────────────────────────┐
+│   Nginx (reverse proxy)         │
+│   /auth/*  → Keycloak :8080     │
+│   /v2/*    → Orion :1026        │
+│   /*       → Frontend (static)  │
+└────┬──────────────┬─────────────┘
+     │              │
+     ▼              ▼
+┌─────────┐   ┌──────────────────┐
+│  Orion  │   │    Keycloak      │
+│  :1026  │   │    :8080         │
+└────┬────┘   └────────┬─────────┘
+     │                 │
+┌────▼────┐   ┌────────▼─────────┐
+│ MongoDB │   │   PostgreSQL     │
+└─────────┘   └──────────────────┘
+```
+
+Nginx es el único punto de entrada. Keycloak no está expuesto directamente — se accede bajo la ruta `/auth/`. El panel de administración de Keycloak solo es accesible mediante túnel SSH.
+
+Cada usuario tiene su propio espacio de datos en Orion gracias al header `Fiware-Service`, construido a partir del ID de usuario de Keycloak, garantizando el aislamiento total entre inventarios.
 
 ---
 
@@ -63,6 +90,7 @@ Cada usuario tiene su propio espacio de datos en Orion gracias al header `Fiware
 | Base de datos (Orion) | MongoDB | 6 |
 | Base de datos (Keycloak) | PostgreSQL | 16 |
 | Orquestación | Docker Compose | — |
+| Proxy inverso (prod) | Nginx | — |
 
 ---
 
@@ -71,6 +99,8 @@ Cada usuario tiene su propio espacio de datos en Orion gracias al header `Fiware
 ```
 Inventario-App/
 ├── docker-compose.yml          # Stack completo de infraestructura
+├── nginx/
+│   └── default.conf            # Config de Nginx para producción
 ├── keycloak/
 │   └── realm-inventario.json   # Configuración automática del realm
 ├── src/
@@ -87,16 +117,64 @@ Inventario-App/
 │       ├── Modal.tsx / .css         # Modal reutilizable
 │       ├── ProductTable.tsx / .css  # Tabla de productos
 │       └── ProductForm.tsx / .css   # Formulario de crear/editar
-└── vite.config.ts              # Proxy /v2 → Orion
+└── vite.config.ts              # Proxy /v2 → Orion (solo desarrollo)
 ```
 
 ---
 
-## Puesta en marcha
+## Variables de entorno
+
+El archivo `.env` no se incluye en el repositorio. Crea uno en la raíz del proyecto.
+
+### Local (`.env`)
+
+```env
+MONGO_PORT=27017
+ORION_PORT=1026
+POSTGRES_DB=keycloak
+POSTGRES_USER=keycloak
+POSTGRES_PASSWORD=keycloak
+POSTGRES_PORT=5432
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=<contraseña-segura>
+KEYCLOAK_PORT=8080
+VITE_KEYCLOAK_URL=http://localhost:8080
+VITE_KEYCLOAK_REALM=inventario
+VITE_KEYCLOAK_CLIENT_ID=inventario-app
+VITE_ORION_URL=http://localhost:1026
+```
+
+### Producción (`.env` en el servidor)
+
+```env
+MONGO_PORT=27017
+ORION_PORT=1026
+POSTGRES_DB=keycloak
+POSTGRES_USER=keycloak
+POSTGRES_PASSWORD=keycloak
+POSTGRES_PORT=5432
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=<contraseña-segura>
+KEYCLOAK_PORT=8080
+KC_PROXY_HEADERS=xforwarded
+KC_HOSTNAME=<ip-o-dominio>
+KC_HOSTNAME_PORT=443
+KC_HTTP_RELATIVE_PATH=/auth
+VITE_KEYCLOAK_URL=https://<ip-o-dominio>/auth
+VITE_KEYCLOAK_REALM=inventario
+VITE_KEYCLOAK_CLIENT_ID=inventario-app
+VITE_ORION_URL=https://<ip-o-dominio>:1026
+```
+
+Las variables `KC_PROXY_HEADERS`, `KC_HOSTNAME`, `KC_HOSTNAME_PORT` y `KC_HTTP_RELATIVE_PATH` solo se pasan a Keycloak si están definidas en el `.env` (sintaxis pass-through en docker-compose). En local no deben existir.
+
+---
+
+## Desarrollo local
 
 ### Requisitos previos
 
-- Docker y Docker Compose instalados
+- Docker y Docker Compose
 - Node.js 18+
 
 ### 1. Levantar la infraestructura
@@ -105,19 +183,15 @@ Inventario-App/
 docker compose up -d
 ```
 
-Esto levanta automáticamente:
-- MongoDB (puerto 27017)
-- Orion Context Broker (puerto 1026)
-- PostgreSQL (puerto 5432)
-- Keycloak con el realm `inventario` preconfigurado (puerto 8080)
+Levanta: MongoDB, Orion, PostgreSQL y Keycloak con el realm `inventario` preconfigurado.
 
-Keycloak tarda ~1 minuto en estar listo. Puedes verificarlo con:
+Keycloak tarda ~1 minuto. Para verificar que está listo:
 
 ```bash
-docker logs inventario-keycloak 2>&1 | grep "Running the server"
+docker logs inventario-keycloak 2>&1 | grep "started in"
 ```
 
-### 2. Instalar dependencias del frontend
+### 2. Instalar dependencias
 
 ```bash
 npm install
@@ -129,26 +203,83 @@ npm install
 npm run dev
 ```
 
-La app estará disponible en `http://localhost:5173`. Al acceder, redirigirá automáticamente al login de Keycloak.
+La app estará en `http://localhost:5173`.
 
 ### Credenciales por defecto
 
 | Servicio | URL | Usuario | Contraseña |
 |---|---|---|---|
 | App | http://localhost:5173 | usuario | usuario123 |
-| Keycloak Admin | http://localhost:8080/admin | admin | admin |
+| Keycloak Admin | http://localhost:8080/admin | admin | *(definido en .env)* |
 
 ### Parar los contenedores
 
 ```bash
-docker compose down
+docker compose down          # Para los contenedores
+docker compose down -v       # Para y elimina los volúmenes (borra datos)
 ```
 
-Para eliminar también los datos almacenados:
+---
+
+## Despliegue en producción
+
+### Requisitos
+
+- Instancia EC2 (Ubuntu) con Docker, Docker Compose y Node.js
+- Nginx instalado
+- Certificado SSL (autofirmado o Let's Encrypt)
+- Puertos abiertos en el Security Group: **22**, **80**, **443**
+
+### 1. Clonar el repositorio y configurar el entorno
 
 ```bash
-docker compose down -v
+git clone https://github.com/<usuario>/Inventario-App.git
+cd Inventario-App
 ```
+
+Crea el `.env` con los valores de producción (ver sección [Variables de entorno](#variables-de-entorno)).
+
+### 2. Configurar Nginx
+
+```bash
+sudo cp nginx/default.conf /etc/nginx/sites-available/default
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 3. Construir el frontend
+
+```bash
+npm install
+npm run build
+sudo rm -rf /var/www/html/*
+sudo cp -r dist/* /var/www/html/
+```
+
+### 4. Levantar los contenedores
+
+```bash
+sudo docker compose up -d
+```
+
+### 5. Actualizar el repositorio en producción
+
+```bash
+git pull
+npm run build
+sudo rm -rf /var/www/html/* && sudo cp -r dist/* /var/www/html/
+sudo nginx -t && sudo systemctl reload nginx
+sudo docker compose down && sudo docker compose up -d
+```
+
+### Acceder al panel de administración de Keycloak
+
+El panel de administración no está expuesto públicamente. Accede mediante túnel SSH:
+
+```bash
+ssh -i /ruta/clave.pem -L 8080:localhost:8080 ubuntu@<ip-servidor>
+```
+
+Luego abre en el navegador: `http://localhost:8080/auth/admin`
 
 ---
 
@@ -176,17 +307,15 @@ Si el usuario no tiene sesión activa es redirigido al login de Keycloak. Solo t
 import Keycloak from 'keycloak-js'
 
 const keycloak = new Keycloak({
-  url: 'http://localhost:8080',
-  realm: 'inventario',
-  clientId: 'inventario-app',
+  url: import.meta.env.VITE_KEYCLOAK_URL,
+  realm: import.meta.env.VITE_KEYCLOAK_REALM,
+  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
 })
 
 export default keycloak
 ```
 
 ### Datos del usuario en la app
-
-El nombre del usuario autenticado se obtiene del token JWT:
 
 ```typescript
 const username = keycloak.tokenParsed?.preferred_username ?? ''
@@ -203,10 +332,8 @@ const username = keycloak.tokenParsed?.preferred_username ?? ''
 Al arrancar los contenedores, Keycloak importa automáticamente `keycloak/realm-inventario.json`, que incluye:
 
 - **Realm:** `inventario`
-- **Cliente:** `inventario-app` (público, redirect a `http://localhost:5173/*`)
+- **Cliente:** `inventario-app` (público, redirect a `http://localhost:5173/*` y `https://<ip>/*`)
 - **Usuario demo:** `usuario` / `usuario123`
-
-Para añadir más usuarios, accede al panel de administración en `http://localhost:8080/admin`.
 
 ---
 
@@ -214,7 +341,7 @@ Para añadir más usuarios, accede al panel de administración en `http://localh
 
 ### Protocolo NGSI v2
 
-Orion almacena los productos como **entidades NGSI v2**. Cada producto es una entidad con atributos tipados:
+Orion almacena los productos como **entidades NGSI v2**:
 
 ```json
 {
@@ -230,8 +357,6 @@ Orion almacena los productos como **entidades NGSI v2**. Cada producto es una en
 
 ### Aislamiento por usuario
 
-Cada usuario tiene sus datos aislados mediante el header `Fiware-Service`. El valor se construye a partir del UUID de Keycloak eliminando los guiones (Orion solo acepta caracteres alfanuméricos y guiones bajos):
-
 ```typescript
 function headers(extra: Record<string, string> = {}): Record<string, string> {
   const userId = (keycloak.tokenParsed?.sub ?? 'anonymous').replace(/-/g, '')
@@ -244,54 +369,29 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
 }
 ```
 
-Dos usuarios distintos nunca verán los productos del otro, aunque compartan la misma instancia de Orion.
-
 ### Operaciones disponibles
 
-#### Obtener todos los productos
-```typescript
-GET /v2/entities?type=InventoryItem&limit=100
-```
+| Operación | Método | Ruta |
+|---|---|---|
+| Listar productos | `GET` | `/v2/entities?type=InventoryItem&limit=100` |
+| Crear producto | `POST` | `/v2/entities` |
+| Actualizar producto | `PATCH` | `/v2/entities/{id}/attrs` |
+| Eliminar producto | `DELETE` | `/v2/entities/{id}` |
 
-#### Crear un producto
-```typescript
-POST /v2/entities
-Content-Type: application/json
+### Proxy
 
-{
-  "id": "urn:ngsi-ld:InventoryItem:1746350123456",
-  "type": "InventoryItem",
-  "name": { "type": "Text", "value": "Manzana roja" },
-  ...
-}
-```
-
-#### Actualizar un producto
-```typescript
-PATCH /v2/entities/{id}/attrs
-Content-Type: application/json
-```
-
-#### Eliminar un producto
-```typescript
-DELETE /v2/entities/{id}
-```
-
-### Proxy de Vite
-
-Las peticiones `/v2/*` del frontend se redirigen a Orion a través del proxy de Vite, evitando problemas de CORS:
+En **desarrollo**, Vite redirige `/v2/*` a Orion para evitar CORS:
 
 ```typescript
 // vite.config.ts
 server: {
   proxy: {
-    '/v2': {
-      target: 'http://localhost:1026',
-      changeOrigin: true,
-    },
+    '/v2': { target: 'http://localhost:1026', changeOrigin: true },
   },
 },
 ```
+
+En **producción**, Nginx hace el mismo proxy con la directiva `location /v2/`.
 
 ---
 
@@ -309,8 +409,6 @@ Componente raíz. Gestiona el estado global y orquesta las llamadas a Orion.
 | `showForm` | `boolean` | Controla el modal de nuevo producto |
 | `editing` | `Product \| null` | Producto seleccionado para editar |
 
----
-
 ### `ProductTable`
 
 Muestra los productos en una tabla con acciones de editar y eliminar.
@@ -322,8 +420,6 @@ interface Props {
   onDelete: (id: string) => void
 }
 ```
-
----
 
 ### `ProductForm`
 
@@ -345,8 +441,6 @@ interface Props {
 | Cantidad | número | ≥ 0 |
 | Precio | número | ≥ 0 (paso 0.01) |
 
----
-
 ### `Modal`
 
 Contenedor modal genérico y reutilizable.
@@ -359,22 +453,13 @@ interface Props {
 }
 ```
 
-Ejemplo de uso:
-
-```tsx
-<Modal title="Nuevo producto" onClose={() => setShowForm(false)}>
-  <ProductForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
-</Modal>
-```
-
 ---
 
 ## Estilos
 
-Tailwind CSS v4 con directivas `@apply`. Cada componente tiene su propio `.css` y todos se importan desde `index.css`:
+Tailwind CSS v4 con directivas `@apply`. Cada componente tiene su propio `.css` importado desde `index.css`:
 
 ```css
-/* src/index.css */
 @import "tailwindcss";
 @import "./App.css";
 @import "./components/Modal.css";
@@ -420,5 +505,3 @@ export interface NgsiEntity {
   price: NgsiAttribute<number>
 }
 ```
-
-`NgsiEntity` representa la estructura real que devuelve y acepta la API de Orion. Las funciones `toProduct` y `toNgsi` en `orion.ts` se encargan de convertir entre ambos formatos.
