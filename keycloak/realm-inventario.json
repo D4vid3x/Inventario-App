@@ -12,29 +12,31 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "redirectUris": [
-        "${env.FRONTEND_URL}/*"
+        "http://localhost:5173/*",
+        "https://16.16.92.5/*"
       ],
       "webOrigins": [
-        "${env.FRONTEND_URL}"
+        "http://localhost:5173",
+        "https://16.16.92.5"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "${env.FRONTEND_URL}/*"
+        "post.logout.redirect.uris": "http://localhost:5173/*##https://16.16.92.5/*"
       }
     }
   ],
   "users": [
     {
       "id": "10000000-0000-0000-0000-000000000001",
-      "username": "${env.DEFAULT_USER}",
+      "username": "usuario",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Usuario",
       "lastName": "Demo",
-      "email": "${env.DEFAULT_USER}@inventario.com",
+      "email": "usuario@inventario.com",
       "credentials": [
         {
           "type": "password",
-          "value": "${env.DEFAULT_USER_PASSWORD}",
+          "value": "usuario123",
           "temporary": false
         }
       ]
