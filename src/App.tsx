@@ -15,18 +15,28 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: 'pedido',     label: 'Pedido' },
 ]
 
+function loadPedido(): PedidoItem[] {
+  try {
+    const saved = localStorage.getItem('pedido')
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
+
 export default function App() {
   const [products, setProducts]   = useState<Product[]>([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState<string | null>(null)
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Product | null>(null)
-  const [pedido, setPedido]       = useState<PedidoItem[]>([])
+  const [pedido, setPedido]       = useState<PedidoItem[]>(loadPedido)
   const [section, setSection]     = useState<Section>('inventario')
   const [toast, setToast]         = useState<string | null>(null)
+  const [toastKey, setToastKey]   = useState(0)
   const toastTimer                = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const username   = keycloak.tokenParsed?.preferred_username ?? ''
+  const username     = keycloak.tokenParsed?.preferred_username ?? ''
   const isBasicoPapa = keycloak.hasRealmRole('BasicoPapa')
 
   const load = useCallback(async () => {
@@ -43,9 +53,14 @@ export default function App() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    localStorage.setItem('pedido', JSON.stringify(pedido))
+  }, [pedido])
+
   function showToast(message: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current)
     setToast(message)
+    setToastKey(k => k + 1)
     toastTimer.current = setTimeout(() => setToast(null), 2000)
   }
 
@@ -89,7 +104,9 @@ export default function App() {
   }
 
   function handleRemovePedido(productId: string) {
-    setPedido(prev => prev.filter(item => item.productId !== productId))
+    const item = pedido.find(i => i.productId === productId)
+    setPedido(prev => prev.filter(i => i.productId !== productId))
+    if (item) showToast(`${item.name} eliminado del pedido`)
   }
 
   function handleQuantityChangePedido(productId: string, delta: number) {
@@ -97,6 +114,10 @@ export default function App() {
       .map(item => item.productId === productId ? { ...item, quantity: item.quantity + delta } : item)
       .filter(item => item.quantity > 0)
     )
+  }
+
+  function handleSetQuantityPedido(productId: string, quantity: number) {
+    setPedido(prev => prev.map(item => item.productId === productId ? { ...item, quantity } : item))
   }
 
   return (
@@ -157,9 +178,13 @@ export default function App() {
             {section === 'pedido' && (
               <PedidoTable
                 items={pedido}
+                products={products}
                 onRemove={handleRemovePedido}
                 onQuantityChange={handleQuantityChangePedido}
+                onSetQuantity={handleSetQuantityPedido}
+                onAdd={handleAddPedido}
                 onClear={() => setPedido([])}
+                isBasicoPapa={isBasicoPapa}
                 showEmpty
               />
             )}
@@ -167,7 +192,7 @@ export default function App() {
         )}
       </main>
 
-      {toast && <Toast message={toast} />}
+      {toast && <Toast key={toastKey} message={toast} />}
 
       {showForm && (
         <Modal title="Nuevo producto" onClose={() => setShowForm(false)}>
