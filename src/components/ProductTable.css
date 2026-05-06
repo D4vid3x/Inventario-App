@@ -50,6 +50,14 @@
   @apply text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 cursor-pointer;
 }
 
+.btn-quantity {
+  @apply text-sm w-7 h-7 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed;
+}
+
+.btn-addPedido {
+  @apply text-xs px-3 py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 cursor-pointer;
+}
+
 .table-empty {
   @apply text-center py-16 text-gray-400 text-sm;
 }

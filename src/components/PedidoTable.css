@@ -1,0 +1,39 @@
+.pedido-wrapper {
+  @apply mt-8 rounded-xl border border-blue-100 bg-blue-50 p-4;
+}
+
+.pedido-header {
+  @apply flex items-center justify-between mb-3;
+}
+
+.pedido-title {
+  @apply text-sm font-semibold text-blue-700;
+}
+
+.pedido-btn-clear {
+  @apply text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-100 cursor-pointer;
+}
+
+.pedido-table {
+  @apply w-full text-sm;
+}
+
+.pedido-thead {
+  @apply text-xs text-blue-600 uppercase;
+}
+
+.pedido-th {
+  @apply text-left py-1 px-2;
+}
+
+.pedido-row {
+  @apply border-t border-blue-100;
+}
+
+.pedido-td {
+  @apply py-1.5 px-2 text-gray-700;
+}
+
+.pedido-btn-remove {
+  @apply text-xs text-red-400 hover:text-red-600 cursor-pointer;
+}

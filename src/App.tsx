@@ -1,19 +1,33 @@
-import { useState, useEffect, useCallback } from 'react'
-import type { Product } from './types'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import type { Product, PedidoItem } from './types'
 import * as orion from './services/orion'
 import keycloak from './services/keycloak'
 import ProductTable from './components/ProductTable'
 import ProductForm from './components/ProductForm'
+import PedidoTable from './components/PedidoTable'
+import Toast from './components/Toast'
 import Modal from './components/Modal'
 
-export default function App() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing] = useState<Product | null>(null)
+type Section = 'inventario' | 'pedido'
 
-  const username = keycloak.tokenParsed?.preferred_username ?? ''
+const SECTIONS: { id: Section; label: string }[] = [
+  { id: 'inventario', label: 'Inventario' },
+  { id: 'pedido',     label: 'Pedido' },
+]
+
+export default function App() {
+  const [products, setProducts]   = useState<Product[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState<string | null>(null)
+  const [showForm, setShowForm]   = useState(false)
+  const [editing, setEditing]     = useState<Product | null>(null)
+  const [pedido, setPedido]       = useState<PedidoItem[]>([])
+  const [section, setSection]     = useState<Section>('inventario')
+  const [toast, setToast]         = useState<string | null>(null)
+  const toastTimer                = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const username   = keycloak.tokenParsed?.preferred_username ?? ''
+  const isBasicoPapa = keycloak.hasRealmRole('BasicoPapa')
 
   const load = useCallback(async () => {
     try {
@@ -29,6 +43,12 @@ export default function App() {
 
   useEffect(() => { load() }, [load])
 
+  function showToast(message: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast(message)
+    toastTimer.current = setTimeout(() => setToast(null), 2000)
+  }
+
   async function handleCreate(data: Omit<Product, 'id'>) {
     await orion.createProduct(data)
     setShowForm(false)
@@ -42,10 +62,41 @@ export default function App() {
     load()
   }
 
+  async function handleQuantityChange(id: string, delta: number) {
+    const product = products.find(p => p.id === id)
+    if (!product) return
+    await orion.updateQuantity(id, Math.max(0, product.quantity + delta))
+    load()
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('¿Eliminar este producto?')) return
     await orion.deleteProduct(id)
     load()
+  }
+
+  function handleAddPedido(id: string) {
+    const product = products.find(p => p.id === id)
+    if (!product) return
+    setPedido(prev => {
+      const existing = prev.find(item => item.productId === id)
+      if (existing) {
+        return prev.map(item => item.productId === id ? { ...item, quantity: item.quantity + 1 } : item)
+      }
+      return [...prev, { productId: id, name: product.name, quantity: 1 }]
+    })
+    showToast(`${product.name} añadido al pedido`)
+  }
+
+  function handleRemovePedido(productId: string) {
+    setPedido(prev => prev.filter(item => item.productId !== productId))
+  }
+
+  function handleQuantityChangePedido(productId: string, delta: number) {
+    setPedido(prev => prev
+      .map(item => item.productId === productId ? { ...item, quantity: item.quantity + delta } : item)
+      .filter(item => item.quantity > 0)
+    )
   }
 
   return (
@@ -53,13 +104,11 @@ export default function App() {
       <header className="app-header">
         <div className="app-header-inner">
           <div>
-            <h1 className="app-header-title">Inventario</h1>
-            <p className="app-header-subtitle">{username}</p>
+            <p className="app-header-section">Apartado</p>
+            <h1 className="app-header-title">{SECTIONS.find(s => s.id === section)?.label}</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowForm(true)} className="app-header-btn">
-              + Añadir producto
-            </button>
+          <div className="flex items-center gap-4">
+            <span className="app-header-user">{username}</span>
             <button onClick={() => keycloak.logout()} className="app-header-logout">
               Cerrar sesión
             </button>
@@ -67,13 +116,58 @@ export default function App() {
         </div>
       </header>
 
+      <nav className="app-nav">
+        <div className="app-nav-inner">
+          {SECTIONS.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setSection(s.id)}
+              className={`app-nav-btn ${section === s.id ? 'app-nav-btn-active' : ''}`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
       <main className="app-main">
         {loading && <p className="app-loading">Cargando...</p>}
         {error && <p className="app-error">{error}</p>}
         {!loading && !error && (
-          <ProductTable products={products} onEdit={setEditing} onDelete={handleDelete} />
+          <>
+            {section === 'inventario' && (
+              <>
+                <div className="app-section-toolbar">
+                  <h2 className="app-section-title">Productos</h2>
+                  <button onClick={() => setShowForm(true)} className="app-header-btn">
+                    + Añadir producto
+                  </button>
+                </div>
+                <ProductTable
+                  products={products}
+                  onEdit={setEditing}
+                  onDelete={handleDelete}
+                  onQuantityChange={handleQuantityChange}
+                  onAddPedido={handleAddPedido}
+                  isBasicoPapa={isBasicoPapa}
+                />
+              </>
+            )}
+
+            {section === 'pedido' && (
+              <PedidoTable
+                items={pedido}
+                onRemove={handleRemovePedido}
+                onQuantityChange={handleQuantityChangePedido}
+                onClear={() => setPedido([])}
+                showEmpty
+              />
+            )}
+          </>
         )}
       </main>
+
+      {toast && <Toast message={toast} />}
 
       {showForm && (
         <Modal title="Nuevo producto" onClose={() => setShowForm(false)}>

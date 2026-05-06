@@ -22,5 +22,11 @@ export interface NgsiEntity {
   price: NgsiAttribute<number>
 }
 
+export interface PedidoItem {
+  productId: string
+  name: string
+  quantity: number
+}
+
 export type Unit = 'kg' | 'Manojo' | 'Caja'
 export type Category = string

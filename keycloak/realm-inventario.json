@@ -4,6 +4,14 @@
   "displayName": "Inventario",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "BasicoPapa",
+        "description": "Rol básico para mi padre, no puede ver las tablas de unidad, precio, stockminimo y tiene acceso a un botón para compartir la tabla con lo que desea pedir "
+      }
+    ]
+  },
   "clients": [
     {
       "clientId": "inventario-app",
@@ -13,32 +21,37 @@
       "directAccessGrantsEnabled": true,
       "redirectUris": [
         "http://localhost:5173/*",
-        "https://16.16.92.5/*"
+        "https://16.16.92.5/*",
+        "https://inventario-app.es/*"
       ],
       "webOrigins": [
         "http://localhost:5173",
-        "https://16.16.92.5"
+        "https://16.16.92.5",
+        "https://inventario-app.es"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://localhost:5173/*##https://16.16.92.5/*"
+        "post.logout.redirect.uris": "http://localhost:5173/*##https://16.16.92.5/*##https://inventario-app.es/*"
       }
     }
   ],
   "users": [
     {
       "id": "10000000-0000-0000-0000-000000000001",
-      "username": "usuario",
+      "username": "Paco",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "Usuario",
+      "firstName": "Francisco",
       "lastName": "Demo",
       "email": "usuario@inventario.com",
       "credentials": [
         {
           "type": "password",
-          "value": "usuario123",
+          "value": "Francisco1972",
           "temporary": false
         }
+      ],
+      "realmRoles": [
+        "BasicoPapa"
       ]
     }
   ]

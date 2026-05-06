@@ -67,6 +67,15 @@ export async function updateProduct(id: string, product: Omit<Product, 'id'>): P
   if (!res.ok) throw new Error('Error al actualizar producto')
 }
 
+export async function updateQuantity(id: string, quantity: number): Promise<void> {
+  const res = await fetch(`${BASE}/entities/${id}/attrs`, {
+    method: 'PATCH',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ quantity: { type: 'Number', value: quantity } }),
+  })
+  if (!res.ok) throw new Error('Error al actualizar cantidad')
+}
+
 export async function deleteProduct(id: string): Promise<void> {
   const res = await fetch(`${BASE}/entities/${id}`, {
     method: 'DELETE',

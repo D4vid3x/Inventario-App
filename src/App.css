@@ -18,6 +18,50 @@
   @apply text-green-200 text-xs;
 }
 
+.app-header-section {
+  @apply text-green-200 text-xs uppercase tracking-widest;
+}
+
+.app-header-user {
+  @apply text-sm text-white font-medium;
+}
+
+.app-section-toolbar {
+  @apply flex justify-between items-center mb-4;
+}
+
+.app-section-title {
+  @apply text-lg font-semibold text-gray-700;
+}
+
+.app-nav {
+  @apply bg-green-800 px-6;
+}
+
+.app-nav-inner {
+  @apply max-w-6xl mx-auto flex gap-1;
+}
+
+.app-nav-btn {
+  @apply text-sm px-4 py-2.5 text-green-200 hover:text-white cursor-pointer border-b-2 border-transparent transition-colors;
+}
+
+.app-nav-btn-active {
+  @apply text-white border-b-2 border-white;
+}
+
+.toast {
+  @apply fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-5 py-2.5 rounded-full shadow-lg pointer-events-none z-50;
+  animation: toast-in-out 2s ease forwards;
+}
+
+@keyframes toast-in-out {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  75%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+}
+
 .app-header-badge {
   @apply bg-red-500 text-white text-xs px-3 py-1 rounded-full font-medium;
 }
